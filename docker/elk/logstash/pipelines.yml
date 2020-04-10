@@ -1,0 +1,41 @@
+  input {
+    file {
+    type => "nginx_access"
+    path => "/var/log/nginx/symfony_access.log"
+    start_position => beginning
+    }
+    file {
+    type => "symfony_dev"
+    path => "/srv/symfony/var/log/dev.log"
+    start_position => beginning
+    }
+    file {
+    type => "symfony_prod"
+    path => "/srv/symfony/var/log/prod.log"
+    start_position => beginning
+    }
+  }
+
+    filter {
+      if [type] == "nginx_access" {
+        grok {
+          patterns_dir => ["/etc/logstash/conf.d/patterns"]
+          match => { "message" => "%{NGINXACCESS}"}
+        }
+      }
+      else if [type] in ["symfony_dev", "symfony_prod"] {
+        grok {
+        patterns_dir => ["/etc/logstash/conf.d/patterns"]
+        match => { "message" => "%{SYMFONY}"}
+        }
+      }
+  }
+
+    output {
+      elasticsearch {
+        hosts => "elasticsearch:9200"
+        index => "logstash-local-dev-%{+YYYY.MM.dd}"
+        user => "elastic"
+        password => "changeme"
+      }
+  }
